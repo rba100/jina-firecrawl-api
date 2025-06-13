@@ -37,6 +37,8 @@ jina_api_key = os.getenv("JINA_API_KEY")
 if not jina_api_key:
     raise ValueError("JINA_API_KEY environment variable is not set. Please set it to use the Jina API.")
 
+SERVICE_TIMEOUT_S = int(os.getenv("SERVICE_TIMEOUT_S", "10"))
+
 @app.post("/v1/scrape", response_model=FirecrawlResponse)
 async def scrape_url(request: ScrapeRequest):
     source_url = request.url
@@ -49,11 +51,11 @@ async def scrape_url(request: ScrapeRequest):
         if source_url.lower().endswith(".pdf"):
             if not source_url.startswith(("http://", "https://")):
                  raise HTTPException(status_code=400, detail="Invalid URL scheme for PDF. Must be http or https.")
-            markdown_content = await scrape_pdf_with_markitdown(source_url)
+            markdown_content = await scrape_pdf_with_markitdown(source_url, timeout_seconds=SERVICE_TIMEOUT_S)
         else:
             if not jina_api_key: # Check if API key is available before calling Jina
                 raise HTTPException(status_code=500, detail="JINA_API_KEY is not configured, cannot scrape non-PDF URLs.")
-            markdown_content = await scrape_with_jina(source_url, jina_api_key)
+            markdown_content = await scrape_with_jina(source_url, jina_api_key, timeout_seconds=SERVICE_TIMEOUT_S)
 
         return FirecrawlResponse(
             success=True,
@@ -71,9 +73,12 @@ async def scrape_url(request: ScrapeRequest):
         print(f"HTTPStatusError for {source_url}: {e.response.status_code} - {e.response.text}")
         return FirecrawlResponse(
             success=False,
-            data=None,
+            data=FirecrawlData(markdown="This link cannot be read programmatically", html=""),
             metadata=FirecrawlMetadata(
                 sourceURL=source_url,
+                title="This link cannot be read programmatically", # No title available on error
+                description="", # No description available on error
+                language="en", # No language available on error
                 statusCode=e.response.status_code,
                 # error=f"Failed to fetch/process: {e.response.status_code}" # Consider adding error field to metadata
             )
@@ -82,11 +87,13 @@ async def scrape_url(request: ScrapeRequest):
         print(f"RequestError for {source_url}: {str(e)}")
         return FirecrawlResponse(
             success=False,
-            data=None,
+            data=FirecrawlData(markdown="This link cannot be read programmatically", html=""),
             metadata=FirecrawlMetadata(
                 sourceURL=source_url,
-                statusCode=503, # Service Unavailable or a general client error code
-                # error=f"Request failed: {str(e)}"
+                title="This link cannot be read programmatically", # No title available on error
+                description="",
+                language="en",
+                statusCode=503,
             )
         )
     except HTTPException as e: # Catch HTTPExceptions raised explicitly (like missing API key or bad PDF URL)
