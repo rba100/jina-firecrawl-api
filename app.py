@@ -7,7 +7,7 @@ import uvicorn
 import logging
 import os
 from jina_handler import scrape_with_jina
-from pdf_handler import scrape_pdf_with_markitdown
+from pdf_handler import scrape_pdf_with_markitdown, get_count_of_pdf_processing_tasks
 
 logger = logging.getLogger("api")
 
@@ -37,6 +37,11 @@ class FirecrawlErrorResponse(BaseModel):
 
 SERVICE_TIMEOUT_S = int(os.getenv("SERVICE_TIMEOUT_S", "10"))
 
+@app.get("", include_in_schema=False)
+@app.get("/", include_in_schema=False)
+async def root():
+    return {"status": "ok", "pdf_processing_tasks": get_count_of_pdf_processing_tasks()}
+
 @app.post("/v1/scrape", response_model=Union[FirecrawlResponse, FirecrawlErrorResponse], responses={
     200: {"model": FirecrawlResponse},
     400: {"model": FirecrawlErrorResponse},
@@ -44,6 +49,11 @@ SERVICE_TIMEOUT_S = int(os.getenv("SERVICE_TIMEOUT_S", "10"))
     503: {"model": FirecrawlErrorResponse},
 })
 async def scrape_url(scrape_request: ScrapeRequest, request: Request):
+
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header required")
+
     source_url = scrape_request.url
     markdown_content = ""
     # status_code will be part of metadata for success, or the response status for errors
@@ -59,13 +69,9 @@ async def scrape_url(scrape_request: ScrapeRequest, request: Request):
             if not markdown_content: # Handle case where PDF scraping might return empty
                 raise HTTPException(status_code=500, detail="Failed to extract content from PDF.")
         else:
-            auth_header = request.headers.get("Authorization")
-            if not auth_header:
-                raise HTTPException(status_code=401, detail="Authorization header required for non-PDF URLs")
             markdown_content = await scrape_with_jina(source_url, auth_header, timeout_seconds=SERVICE_TIMEOUT_S)
             if not markdown_content: # Handle case where Jina might return empty
                 raise HTTPException(status_code=500, detail="Failed to extract content using Jina.")
-
 
         return FirecrawlResponse(
             data=FirecrawlData(markdown=markdown_content, html=""),

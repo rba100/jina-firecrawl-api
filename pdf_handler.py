@@ -12,7 +12,15 @@ MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 pdf_executor = ThreadPoolExecutor(max_workers=11)
 
 # Semaphore to limit concurrent PDF processing tasks
-pdf_processing_semaphore = asyncio.Semaphore(10)
+MAX_CONCURRENT_PDF_TASKS = 10
+pdf_processing_semaphore = asyncio.Semaphore(MAX_CONCURRENT_PDF_TASKS)
+
+def get_count_of_pdf_processing_tasks() -> int:
+    """
+    Returns the current count of PDF processing tasks.
+    This is useful for monitoring and debugging purposes.
+    """
+    return MAX_CONCURRENT_PDF_TASKS - pdf_processing_semaphore._value  # Accessing the semaphore's internal value directly
 
 async def scrape_pdf_with_markitdown(url: str, timeout_seconds: int) -> str:
     """
