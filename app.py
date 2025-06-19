@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from typing import Union
 import httpx
 import uvicorn
 import logging
 import os
-from jina_handler import scrape_with_jina # Import the refactored Jina handler
-from pdf_handler import scrape_pdf_with_markitdown # Import the new PDF handler
+from jina_handler import scrape_with_jina
+from pdf_handler import scrape_pdf_with_markitdown
 
 logger = logging.getLogger("api")
 
@@ -16,19 +18,19 @@ class ScrapeRequest(BaseModel):
 
 class FirecrawlData(BaseModel):
     markdown: str
-    html: str | None = ""
+    html: str = ""
 
 class FirecrawlMetadata(BaseModel):
     sourceURL: str
-    title: str | None = None
-    description: str | None
-    language: str | None = "en"
-    statusCode: int | None
+    title: str = ""
+    description: str = ""
+    language: str = ""
+    statusCode: int = 200
 
 class FirecrawlResponse(BaseModel):
-    success: bool
-    data: FirecrawlData | None = None
-    metadata: FirecrawlMetadata | None = None
+    success: bool = True
+    data: FirecrawlData
+    metadata: FirecrawlMetadata
 
 class FirecrawlErrorResponse(BaseModel):
     error: str
@@ -39,86 +41,72 @@ if not jina_api_key:
 
 SERVICE_TIMEOUT_S = int(os.getenv("SERVICE_TIMEOUT_S", "10"))
 
-@app.post("/v1/scrape", response_model=FirecrawlResponse)
+@app.post("/v1/scrape", response_model=Union[FirecrawlResponse, FirecrawlErrorResponse], responses={
+    200: {"model": FirecrawlResponse},
+    400: {"model": FirecrawlErrorResponse},
+    500: {"model": FirecrawlErrorResponse},
+    503: {"model": FirecrawlErrorResponse},
+})
 async def scrape_url(request: ScrapeRequest):
     source_url = request.url
     markdown_content = ""
-    status_code = 200 # Default success status code
+    # status_code will be part of metadata for success, or the response status for errors
 
     print(f"Received scrape request for URL: {source_url}")
 
     try:
         if source_url.lower().endswith(".pdf"):
             if not source_url.startswith(("http://", "https://")):
+                 # This will be caught by the HTTPException handler below
                  raise HTTPException(status_code=400, detail="Invalid URL scheme for PDF. Must be http or https.")
             markdown_content = await scrape_pdf_with_markitdown(source_url, timeout_seconds=SERVICE_TIMEOUT_S)
+            if not markdown_content: # Handle case where PDF scraping might return empty
+                raise HTTPException(status_code=500, detail="Failed to extract content from PDF.")
         else:
-            if not jina_api_key: # Check if API key is available before calling Jina
+            if not jina_api_key:
                 raise HTTPException(status_code=500, detail="JINA_API_KEY is not configured, cannot scrape non-PDF URLs.")
             markdown_content = await scrape_with_jina(source_url, jina_api_key, timeout_seconds=SERVICE_TIMEOUT_S)
+            if not markdown_content: # Handle case where Jina might return empty
+                raise HTTPException(status_code=500, detail="Failed to extract content using Jina.")
+
 
         return FirecrawlResponse(
-            success=True,
-            data=FirecrawlData(markdown=markdown_content, html=""), # Assuming html is not populated by these handlers
+            data=FirecrawlData(markdown=markdown_content, html=""),
             metadata=FirecrawlMetadata(
-                sourceURL=source_url, 
-                title=source_url, # Basic title
+                sourceURL=source_url,
+                title=source_url, # Basic title, can be improved
                 description="Scraped content", # Basic description
-                language="en", 
-                statusCode=status_code
+                language="en", # Or try to detect
+                statusCode=200
             )
         )
     except httpx.HTTPStatusError as e:
-        # Log the error for debugging
+        error_message = f"Failed to fetch/process URL. Upstream status: {e.response.status_code}"
         print(f"HTTPStatusError for {source_url}: {e.response.status_code} - {e.response.text}")
-        return FirecrawlResponse(
-            success=False,
-            data=FirecrawlData(markdown="This link cannot be read programmatically", html=""),
-            metadata=FirecrawlMetadata(
-                sourceURL=source_url,
-                title="This link cannot be read programmatically", # No title available on error
-                description="", # No description available on error
-                language="en", # No language available on error
-                statusCode=e.response.status_code,
-                # error=f"Failed to fetch/process: {e.response.status_code}" # Consider adding error field to metadata
-            )
+        return JSONResponse(
+            status_code=e.response.status_code if e.response.status_code >= 400 else 500, # Ensure client/server error
+            content=FirecrawlErrorResponse(error=error_message).model_dump()
         )
     except httpx.RequestError as e:
+        error_message = f"Request failed for URL: {str(e)}"
         print(f"RequestError for {source_url}: {str(e)}")
-        return FirecrawlResponse(
-            success=False,
-            data=FirecrawlData(markdown="This link cannot be read programmatically", html=""),
-            metadata=FirecrawlMetadata(
-                sourceURL=source_url,
-                title="This link cannot be read programmatically", # No title available on error
-                description="",
-                language="en",
-                statusCode=503,
-            )
+        return JSONResponse(
+            status_code=503, # Service Unavailable
+            content=FirecrawlErrorResponse(error=error_message).model_dump()
         )
-    except HTTPException as e: # Catch HTTPExceptions raised explicitly (like missing API key or bad PDF URL)
-        return FirecrawlResponse(
-            success=False,
-            data=None,
-            metadata=FirecrawlMetadata(
-                sourceURL=source_url,
-                statusCode=e.status_code,
-                # error=e.detail
-            )
+    except HTTPException as e: # Catch our own explicit HTTPExceptions
+        return JSONResponse(
+            status_code=e.status_code,
+            content=FirecrawlErrorResponse(error=e.detail).model_dump()
         )
     except Exception as e:
+        error_message = f"An unexpected server error occurred: {str(e)}"
         print(f"Unexpected error for {source_url}: {str(e)}")
-        # Log the full traceback for debugging
         import traceback
         traceback.print_exc()
-        return FirecrawlResponse(
-            success=False,
-            data=None,
-            metadata=FirecrawlMetadata(
-                sourceURL=source_url,
-                statusCode=500, # Internal Server Error
-                # error=f"An unexpected error occurred: {str(e)}"
-            )
+        return JSONResponse(
+            status_code=500, # Internal Server Error
+            content=FirecrawlErrorResponse(error=error_message).model_dump()
         )
 
 @app.post("/v1/scrape_raw")

@@ -6,7 +6,7 @@ import asyncio
 from fastapi import HTTPException
 from concurrent.futures import ThreadPoolExecutor
 
-MAX_PDF_SIZE_BYTES = 2 * 1024 * 1024  # 2MB
+MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024  # 5 MB
 
 # Create a ThreadPoolExecutor for PDF processing.
 pdf_executor = ThreadPoolExecutor(max_workers=11)
