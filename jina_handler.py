@@ -1,6 +1,8 @@
 import httpx
 import os
 
+SCRAPE_ENGINE = os.getenv("SCRAPE_ENGINE", None)
+
 async def scrape_with_jina(url: str, auth_header: str, timeout_seconds: int) -> str:
     """
     Scrapes the given URL using the Jina.ai API.
@@ -10,6 +12,10 @@ async def scrape_with_jina(url: str, auth_header: str, timeout_seconds: int) -> 
         headers = {
             "Authorization": auth_header
         }
+
+        if SCRAPE_ENGINE:
+            headers["X-Engine"] = SCRAPE_ENGINE.lower()
+
         response = await client.get(jina_url, headers=headers, follow_redirects=True, timeout=float(timeout_seconds))
         response.raise_for_status()
         return response.text
