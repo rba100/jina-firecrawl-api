@@ -36,21 +36,15 @@ It'd intended to be a drop in replacement for Firecrawl for LibreChat users.
     ```bash
     pip install -r requirements.txt
     ```
+## API Key
 
-4.  **Environment Variables:**
-    This application requires a Jina AI API key. Create a `.env` file in the root of the project:
-    ```
-    JINA_API_KEY=your_jina_api_key_here
-    ```
-    Replace `your_jina_api_key_here` with your actual Jina AI API key. The application will not be able to scrape non-PDF URLs without this key.
+Supply an https://jina.ai key as the bearer auth token. This will be used when the request is serviced by jina.
 
 ## Running the Application
 
 You can run the application locally, with Docker, or with Docker Compose.
 
 ### 1. Locally (for development)
-
-Ensure you have installed dependencies and set up the `.env` file.
 
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 3002 --reload
@@ -66,9 +60,8 @@ docker build -t jina-firecrawl-api .
 
 Then, run the container, passing the `JINA_API_KEY` as an environment variable:
 ```bash
-docker run -p 3002:3002 -e JINA_API_KEY="your_jina_api_key_here" jina-firecrawl-api
+docker run -p 3002:3002 jina-firecrawl-api
 ```
-Replace `your_jina_api_key_here` with your actual key.
 
 ### 3. With Docker Compose
 
@@ -78,7 +71,7 @@ Then, simply run:
 ```bash
 docker-compose up
 ```
-This will build the image (if not already built) and run the service, automatically loading the `JINA_API_KEY` from the `.env` file. The API will be available at `http://localhost:3002`.
+This will build the image (if not already built) and run the service. The API will be available at `http://localhost:3002`.
 
 ## API Endpoints
 
