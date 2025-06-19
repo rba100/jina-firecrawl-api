@@ -35,10 +35,6 @@ class FirecrawlResponse(BaseModel):
 class FirecrawlErrorResponse(BaseModel):
     error: str
 
-jina_api_key = os.getenv("JINA_API_KEY")
-if not jina_api_key:
-    raise ValueError("JINA_API_KEY environment variable is not set. Please set it to use the Jina API.")
-
 SERVICE_TIMEOUT_S = int(os.getenv("SERVICE_TIMEOUT_S", "10"))
 
 @app.post("/v1/scrape", response_model=Union[FirecrawlResponse, FirecrawlErrorResponse], responses={
@@ -47,8 +43,8 @@ SERVICE_TIMEOUT_S = int(os.getenv("SERVICE_TIMEOUT_S", "10"))
     500: {"model": FirecrawlErrorResponse},
     503: {"model": FirecrawlErrorResponse},
 })
-async def scrape_url(request: ScrapeRequest):
-    source_url = request.url
+async def scrape_url(scrape_request: ScrapeRequest, request: Request):
+    source_url = scrape_request.url
     markdown_content = ""
     # status_code will be part of metadata for success, or the response status for errors
 
@@ -63,9 +59,10 @@ async def scrape_url(request: ScrapeRequest):
             if not markdown_content: # Handle case where PDF scraping might return empty
                 raise HTTPException(status_code=500, detail="Failed to extract content from PDF.")
         else:
-            if not jina_api_key:
-                raise HTTPException(status_code=500, detail="JINA_API_KEY is not configured, cannot scrape non-PDF URLs.")
-            markdown_content = await scrape_with_jina(source_url, jina_api_key, timeout_seconds=SERVICE_TIMEOUT_S)
+            auth_header = request.headers.get("Authorization")
+            if not auth_header:
+                raise HTTPException(status_code=401, detail="Authorization header required for non-PDF URLs")
+            markdown_content = await scrape_with_jina(source_url, auth_header, timeout_seconds=SERVICE_TIMEOUT_S)
             if not markdown_content: # Handle case where Jina might return empty
                 raise HTTPException(status_code=500, detail="Failed to extract content using Jina.")
 
