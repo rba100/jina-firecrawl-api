@@ -120,22 +120,4 @@ This endpoint scrapes a given URL and returns its content as markdown.
       }
     }
     ```
-
-### `POST /v1/scrape_raw`
-
-This is a debugging endpoint. It logs the raw JSON request body to the console and then intentionally returns an HTTP 500 error.
-
-*   **Request Body (JSON):**
-    Any valid JSON.
-    ```json
-    {
-      "url": "<URL_TO_SCRAPE>",
-      "some_other_data": "test"
-    }
-    ```
-*   **Response (500 Internal Server Error):**
-    ```json
-    {
-        "detail": "Intentional server error for /v1/scrape_raw"
-    }
-    ```
+    

@@ -120,7 +120,7 @@ async def scrape_url(scrape_request: ScrapeRequest, request: Request):
             content=FirecrawlErrorResponse(error=error_message).model_dump()
         )
 
-@app.post("/v1/scrape_raw")
+@app.post("/v1/scrape_raw", include_in_schema=False)
 async def scrape_raw(request: Request):
     try:
         request_body = await request.json()
