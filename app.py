@@ -120,14 +120,5 @@ async def scrape_url(scrape_request: ScrapeRequest, request: Request):
             content=FirecrawlErrorResponse(error=error_message).model_dump()
         )
 
-@app.post("/v1/scrape_raw", include_in_schema=False)
-async def scrape_raw(request: Request):
-    try:
-        request_body = await request.json()
-        print(f"Received request on /v1/scrape_raw: {request_body}")
-    except Exception as e:
-        print(f"Error reading JSON body from /v1/scrape_raw: {e}")
-    raise HTTPException(status_code=500, detail="Intentional server error for /v1/scrape_raw")
-
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=os.getenv("PORT", 3002))
