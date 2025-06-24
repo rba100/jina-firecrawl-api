@@ -99,8 +99,9 @@ async def scrape_url(scrape_request: ScrapeRequest, request: Request):
             content=FirecrawlErrorResponse(error=error_message).model_dump()
         )
     except httpx.RequestError as e:
-        error_message = f"Request failed for URL: {str(e)}"
-        logger.error(f"RequestError for {source_url}: {str(e)}")
+        serialisedError = str(e).replace("\n", " ")
+        error_message = f"Request failed for URL: {serialisedError}"
+        logger.error(f"RequestError for {source_url}: {serialisedError}")
         return JSONResponse(
             status_code=503,  # Service Unavailable
             content=FirecrawlErrorResponse(error=error_message).model_dump()
