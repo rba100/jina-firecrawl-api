@@ -22,5 +22,5 @@ COPY pdf_handler.py .
 # Make port 3002 available to the world outside this container
 EXPOSE 3002
 
-# Run app.py when the container launches
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3002"]
+# Run app.py
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3002", "--workers", "2"]
