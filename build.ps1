@@ -1,0 +1,1 @@
+docker build -t jina-firecrawl-api .

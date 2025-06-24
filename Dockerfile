@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the content of the local src directory to the working directory
+
+COPY logging.conf .
 COPY app.py . 
 COPY jina_handler.py . 
 COPY pdf_handler.py . 
