@@ -61,12 +61,13 @@ public class ScrapeService : IScrapeService
         catch (HttpRequestException ex)
         {
             statusCode = 503;
-            throw new Exception($"Request failed for URL: {ex.Message}");
+            _logger.LogError(ex, "Request failed for URL: {Url}", sourceUrl);
+            return CreateErrorResponse($"Request failed for URL: {sourceUrl}. Error: {ex.Message}");
         }
         catch (ArgumentException ex)
         {
             statusCode = 400;
-            throw new Exception(ex.Message);
+            return CreateErrorResponse(ex.Message);
         }
         catch (Exception ex)
         {
