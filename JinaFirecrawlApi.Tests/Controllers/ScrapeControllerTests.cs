@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
-using Xunit;
 using JinaFirecrawlApi.Controllers;
 using JinaFirecrawlApi.Models;
 using JinaFirecrawlApi.Services;
@@ -13,10 +12,11 @@ namespace JinaFirecrawlApi.Tests.Controllers;
 
 public class ScrapeControllerTests
 {
-    private readonly Mock<IScrapeService> _mockScrapeService;
-    private readonly ScrapeController _controller;
+    private Mock<IScrapeService> _mockScrapeService;
+    private ScrapeController _controller;
 
-    public ScrapeControllerTests()
+    [SetUp]
+    public void SetUp()
     {
         _mockScrapeService = new Mock<IScrapeService>();
         _controller = new ScrapeController(_mockScrapeService.Object);
@@ -29,7 +29,7 @@ public class ScrapeControllerTests
         };
     }
 
-    [Fact]
+    [Test]
     public async Task Scrape_WithMissingAuthorizationHeader_ReturnsUnauthorized()
     {
         // Arrange
@@ -39,12 +39,14 @@ public class ScrapeControllerTests
         var result = await _controller.Scrape(request, CancellationToken.None);
 
         // Assert
-        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
-        var response = Assert.IsType<FirecrawlErrorResponse>(unauthorizedResult.Value);
-        Assert.Equal("Authorization header required", response.Error);
+        Assert.That(result, Is.TypeOf<UnauthorizedObjectResult>());
+        var unauthorizedResult = (UnauthorizedObjectResult)result;
+        Assert.That(unauthorizedResult.Value, Is.TypeOf<FirecrawlErrorResponse>());
+        var response = (FirecrawlErrorResponse)unauthorizedResult.Value!;
+        Assert.That(response.Error, Is.EqualTo("Authorization header required"));
     }
 
-    [Fact]
+    [Test]
     public async Task Scrape_WithEmptyAuthorizationHeader_ReturnsUnauthorized()
     {
         // Arrange
@@ -55,12 +57,14 @@ public class ScrapeControllerTests
         var result = await _controller.Scrape(request, CancellationToken.None);
 
         // Assert
-        var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
-        var response = Assert.IsType<FirecrawlErrorResponse>(unauthorizedResult.Value);
-        Assert.Equal("Authorization header required", response.Error);
+        Assert.That(result, Is.TypeOf<UnauthorizedObjectResult>());
+        var unauthorizedResult = (UnauthorizedObjectResult)result;
+        Assert.That(unauthorizedResult.Value, Is.TypeOf<FirecrawlErrorResponse>());
+        var response = (FirecrawlErrorResponse)unauthorizedResult.Value!;
+        Assert.That(response.Error, Is.EqualTo("Authorization header required"));
     }
 
-    [Fact]
+    [Test]
     public async Task Scrape_WithValidRequest_ReturnsOkResult()
     {
         // Arrange
@@ -80,14 +84,16 @@ public class ScrapeControllerTests
         var result = await _controller.Scrape(request, CancellationToken.None);
 
         // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result);
-        var response = Assert.IsType<FirecrawlResponse>(okResult.Value);
-        Assert.True(response.Success);
-        Assert.Equal("content", response.Data?.Markdown);
-        Assert.Equal("https://example.com", response.Metadata?.SourceURL);
+        Assert.That(result, Is.TypeOf<OkObjectResult>());
+        var okResult = (OkObjectResult)result;
+        Assert.That(okResult.Value, Is.TypeOf<FirecrawlResponse>());
+        var response = (FirecrawlResponse)okResult.Value!;
+        Assert.That(response.Success, Is.True);
+        Assert.That(response.Data?.Markdown, Is.EqualTo("content"));
+        Assert.That(response.Metadata?.SourceURL, Is.EqualTo("https://example.com"));
     }
 
-    [Fact]
+    [Test]
     public async Task Scrape_WithHttpRequestException_ReturnsServiceUnavailable()
     {
         // Arrange
@@ -102,14 +108,16 @@ public class ScrapeControllerTests
         var result = await _controller.Scrape(request, CancellationToken.None);
 
         // Assert
-        var statusResult = Assert.IsType<ObjectResult>(result);
-        Assert.Equal(503, statusResult.StatusCode);
-        var response = Assert.IsType<FirecrawlErrorResponse>(statusResult.Value);
-        Assert.Contains("Request failed for URL:", response.Error);
-        Assert.Contains("Network error", response.Error);
+        Assert.That(result, Is.TypeOf<ObjectResult>());
+        var statusResult = (ObjectResult)result;
+        Assert.That(statusResult.StatusCode, Is.EqualTo(503));
+        Assert.That(statusResult.Value, Is.TypeOf<FirecrawlErrorResponse>());
+        var response = (FirecrawlErrorResponse)statusResult.Value!;
+        Assert.That(response.Error, Does.Contain("Request failed for URL:"));
+        Assert.That(response.Error, Does.Contain("Network error"));
     }
 
-    [Fact]
+    [Test]
     public async Task Scrape_PassesCorrectParametersToService()
     {
         // Arrange
@@ -132,10 +140,10 @@ public class ScrapeControllerTests
         ), Times.Once);
     }
 
-    [Theory]
-    [InlineData("Bearer token")]
-    [InlineData("Basic token")]
-    [InlineData("API-KEY token")]
+    [Test]
+    [TestCase("Bearer token")]
+    [TestCase("Basic token")]
+    [TestCase("API-KEY token")]
     public async Task Scrape_WithDifferentAuthorizationSchemes_PassesToService(string authHeader)
     {
         // Arrange

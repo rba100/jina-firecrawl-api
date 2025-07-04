@@ -5,23 +5,23 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Moq;
-using Xunit;
 using JinaFirecrawlApi.Middleware;
 
 namespace JinaFirecrawlApi.Tests.Middleware;
 
 public class ApiKeyMiddlewareTests
 {
-    private readonly Mock<RequestDelegate> _mockNext;
-    private readonly ApiKeyMiddleware _middleware;
+    private Mock<RequestDelegate> _mockNext;
+    private ApiKeyMiddleware _middleware;
 
-    public ApiKeyMiddlewareTests()
+    [SetUp]
+    public void SetUp()
     {
         _mockNext = new Mock<RequestDelegate>();
         _middleware = new ApiKeyMiddleware(_mockNext.Object);
     }
 
-    [Fact]
+    [Test]
     public async Task InvokeAsync_WithRootPath_CallsNext()
     {
         // Arrange
@@ -35,7 +35,7 @@ public class ApiKeyMiddlewareTests
         _mockNext.Verify(x => x(context), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task InvokeAsync_WithMissingAuthorizationHeader_Returns401()
     {
         // Arrange
@@ -47,7 +47,7 @@ public class ApiKeyMiddlewareTests
         await _middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(401, context.Response.StatusCode);
+        Assert.That(context.Response.StatusCode, Is.EqualTo(401));
         _mockNext.Verify(x => x(It.IsAny<HttpContext>()), Times.Never);
 
         // Verify response body
@@ -56,10 +56,10 @@ public class ApiKeyMiddlewareTests
         var responseBody = await reader.ReadToEndAsync();
         
         var errorResponse = JsonSerializer.Deserialize<JsonElement>(responseBody);
-        Assert.Equal("Authorization header required", errorResponse.GetProperty("error").GetString());
+        Assert.That(errorResponse.GetProperty("error").GetString(), Is.EqualTo("Authorization header required"));
     }
 
-    [Fact]
+    [Test]
     public async Task InvokeAsync_WithAuthorizationHeader_CallsNext()
     {
         // Arrange
@@ -72,13 +72,13 @@ public class ApiKeyMiddlewareTests
 
         // Assert
         _mockNext.Verify(x => x(context), Times.Once);
-        Assert.Equal(200, context.Response.StatusCode); // Default status code
+        Assert.That(context.Response.StatusCode, Is.EqualTo(200)); // Default status code
     }
 
-    [Theory]
-    [InlineData("/health")]
-    [InlineData("/status")]
-    [InlineData("/api/test")]
+    [Test]
+    [TestCase("/health")]
+    [TestCase("/status")]
+    [TestCase("/api/test")]
     public async Task InvokeAsync_WithNonRootPathAndMissingAuth_Returns401(string path)
     {
         // Arrange
@@ -90,15 +90,15 @@ public class ApiKeyMiddlewareTests
         await _middleware.InvokeAsync(context);
 
         // Assert
-        Assert.Equal(401, context.Response.StatusCode);
+        Assert.That(context.Response.StatusCode, Is.EqualTo(401));
         _mockNext.Verify(x => x(It.IsAny<HttpContext>()), Times.Never);
     }
 
-    [Theory]
-    [InlineData("Bearer token")]
-    [InlineData("Basic credentials")]
-    [InlineData("API-KEY key")]
-    [InlineData("some-random-value")]
+    [Test]
+    [TestCase("Bearer token")]
+    [TestCase("Basic credentials")]
+    [TestCase("API-KEY key")]
+    [TestCase("some-random-value")]
     public async Task InvokeAsync_WithDifferentAuthorizationValues_CallsNext(string authValue)
     {
         // Arrange
@@ -113,7 +113,7 @@ public class ApiKeyMiddlewareTests
         _mockNext.Verify(x => x(context), Times.Once);
     }
 
-    [Fact]
+    [Test]
     public async Task InvokeAsync_WithEmptyAuthorizationHeader_CallsNext()
     {
         // Arrange
@@ -126,10 +126,10 @@ public class ApiKeyMiddlewareTests
 
         // Assert
         _mockNext.Verify(x => x(context), Times.Once);
-        Assert.Equal(200, context.Response.StatusCode); // Default status code since next is called
+        Assert.That(context.Response.StatusCode, Is.EqualTo(200)); // Default status code since next is called
     }
 
-    [Fact]
+    [Test]
     public async Task InvokeAsync_WithWhitespaceAuthorizationHeader_CallsNext()
     {
         // Arrange
@@ -142,6 +142,6 @@ public class ApiKeyMiddlewareTests
 
         // Assert
         _mockNext.Verify(x => x(context), Times.Once);
-        Assert.Equal(200, context.Response.StatusCode); // Default status code since next is called
+        Assert.That(context.Response.StatusCode, Is.EqualTo(200)); // Default status code since next is called
     }
 }

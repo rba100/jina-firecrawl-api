@@ -7,20 +7,21 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
-using Xunit;
 using JinaFirecrawlApi.Models;
 using JinaFirecrawlApi.Services;
 
 namespace JinaFirecrawlApi.Tests.Integration;
 
-public class ScrapeApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+[TestFixture]
+public class ScrapeApiIntegrationTests
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly HttpClient _client;
+    private WebApplicationFactory<Program> _factory = null!;
+    private HttpClient _client = null!;
 
-    public ScrapeApiIntegrationTests(WebApplicationFactory<Program> factory)
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
     {
-        _factory = factory.WithWebHostBuilder(builder =>
+        _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.ConfigureServices(services =>
             {
@@ -42,34 +43,44 @@ public class ScrapeApiIntegrationTests : IClassFixture<WebApplicationFactory<Pro
         _client = _factory.CreateClient();
     }
 
-    [Fact]
+    [OneTimeTearDown]
+    public void OneTimeTearDown()
+    {
+        _client?.Dispose();
+        _factory?.Dispose();
+    }
+
+    [Test]
     public async Task POST_Scrape_WithoutAuthHeader_Returns401()
     {
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com" };
         var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+        
+        using var client = _factory.CreateClient();
 
         // Act
-        var response = await _client.PostAsync("/v1/scrape", content);
+        var response = await client.PostAsync("/v1/scrape", content);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.Unauthorized));
     }
 
-    [Fact]
+    [Test]
     public async Task POST_Scrape_WithAuthHeader_ReturnsSuccess()
     {
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com" };
         var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         
+        _client.DefaultRequestHeaders.Clear();
         _client.DefaultRequestHeaders.Add("Authorization", "Bearer test-token");
 
         // Act
         var response = await _client.PostAsync("/v1/scrape", content);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
         
         var responseContent = await response.Content.ReadAsStringAsync();
         var firecrawlResponse = JsonSerializer.Deserialize<FirecrawlResponse>(responseContent, new JsonSerializerOptions 
@@ -77,25 +88,26 @@ public class ScrapeApiIntegrationTests : IClassFixture<WebApplicationFactory<Pro
             PropertyNameCaseInsensitive = true 
         });
         
-        Assert.NotNull(firecrawlResponse);
-        Assert.True(firecrawlResponse.Success);
-        Assert.Equal("Mock content from Jina", firecrawlResponse.Data?.Markdown);
+        Assert.That(firecrawlResponse, Is.Not.Null);
+        Assert.That(firecrawlResponse!.Success, Is.True);
+        Assert.That(firecrawlResponse.Data?.Markdown, Is.EqualTo("Mock content from Jina"));
     }
 
-    [Fact]
+    [Test]
     public async Task POST_Scrape_WithPdfUrl_UsesPdfHandler()
     {
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com/test.pdf" };
         var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
         
+        _client.DefaultRequestHeaders.Clear();
         _client.DefaultRequestHeaders.Add("Authorization", "Bearer test-token");
 
         // Act
         var response = await _client.PostAsync("/v1/scrape", content);
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
         
         var responseContent = await response.Content.ReadAsStringAsync();
         var firecrawlResponse = JsonSerializer.Deserialize<FirecrawlResponse>(responseContent, new JsonSerializerOptions 
@@ -103,18 +115,18 @@ public class ScrapeApiIntegrationTests : IClassFixture<WebApplicationFactory<Pro
             PropertyNameCaseInsensitive = true 
         });
         
-        Assert.NotNull(firecrawlResponse);
-        Assert.True(firecrawlResponse.Success);
-        Assert.Equal("Mock PDF content", firecrawlResponse.Data?.Markdown);
+        Assert.That(firecrawlResponse, Is.Not.Null);
+        Assert.That(firecrawlResponse!.Success, Is.True);
+        Assert.That(firecrawlResponse.Data?.Markdown, Is.EqualTo("Mock PDF content"));
     }
 
-    [Fact]
+    [Test]
     public async Task GET_Root_ReturnsSuccess()
     {
         // Act
         var response = await _client.GetAsync("/");
 
         // Assert
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.That(response.StatusCode, Is.EqualTo(System.Net.HttpStatusCode.OK));
     }
 }

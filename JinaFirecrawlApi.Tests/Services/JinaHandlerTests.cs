@@ -5,19 +5,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using Moq;
 using Moq.Protected;
-using Xunit;
+
 using JinaFirecrawlApi.Services;
 
 namespace JinaFirecrawlApi.Tests.Services;
 
-public class JinaHandlerTests : IDisposable
+public class JinaHandlerTests
 {
-    private readonly Mock<IHttpClientFactory> _mockHttpClientFactory;
-    private readonly Mock<HttpMessageHandler> _mockHttpMessageHandler;
-    private readonly HttpClient _httpClient;
-    private readonly JinaHandler _jinaHandler;
+    private Mock<IHttpClientFactory> _mockHttpClientFactory = null!;
+    private Mock<HttpMessageHandler> _mockHttpMessageHandler = null!;
+    private HttpClient _httpClient = null!;
+    private JinaHandler _jinaHandler = null!;
 
-    public JinaHandlerTests()
+    [SetUp]
+    public void SetUp()
     {
         _mockHttpClientFactory = new Mock<IHttpClientFactory>();
         _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
@@ -29,7 +30,7 @@ public class JinaHandlerTests : IDisposable
         _jinaHandler = new JinaHandler(_mockHttpClientFactory.Object);
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeWithJina_WithValidResponse_ReturnsContent()
     {
         // Arrange
@@ -53,10 +54,10 @@ public class JinaHandlerTests : IDisposable
         var result = await _jinaHandler.ScrapeWithJina(url, authHeader, 30);
 
         // Assert
-        Assert.Equal(expectedContent, result);
+        Assert.That(result, Is.EqualTo(expectedContent));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeWithJina_ConfiguresHttpClientCorrectly()
     {
         // Arrange
@@ -80,12 +81,12 @@ public class JinaHandlerTests : IDisposable
         await _jinaHandler.ScrapeWithJina(url, authHeader, timeoutSeconds);
 
         // Assert
-        Assert.Equal(TimeSpan.FromSeconds(timeoutSeconds), _httpClient.Timeout);
-        Assert.Equal("Bearer", _httpClient.DefaultRequestHeaders.Authorization?.Scheme);
-        Assert.Equal("test-token", _httpClient.DefaultRequestHeaders.Authorization?.Parameter);
+        Assert.That(_httpClient.Timeout, Is.EqualTo(TimeSpan.FromSeconds(timeoutSeconds)));
+        Assert.That(_httpClient.DefaultRequestHeaders.Authorization?.Scheme, Is.EqualTo("Bearer"));
+        Assert.That(_httpClient.DefaultRequestHeaders.Authorization?.Parameter, Is.EqualTo("test-token"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeWithJina_SendsCorrectPostRequest()
     {
         // Arrange
@@ -110,14 +111,14 @@ public class JinaHandlerTests : IDisposable
         await _jinaHandler.ScrapeWithJina(url, authHeader, 30);
 
         // Assert
-        Assert.NotNull(capturedRequest);
-        Assert.Equal(HttpMethod.Post, capturedRequest.Method);
-        Assert.Equal("https://r.jina.ai/", capturedRequest.RequestUri?.ToString());
-        Assert.Equal("application/json", capturedRequest.Content?.Headers.ContentType?.MediaType);
-        Assert.Equal("utf-8", capturedRequest.Content?.Headers.ContentType?.CharSet);
+        Assert.That(capturedRequest, Is.Not.Null);
+        Assert.That(capturedRequest.Method, Is.EqualTo(HttpMethod.Post));
+        Assert.That(capturedRequest.RequestUri?.ToString(), Is.EqualTo("https://r.jina.ai/"));
+        Assert.That(capturedRequest.Content?.Headers.ContentType?.MediaType, Is.EqualTo("application/json"));
+        Assert.That(capturedRequest.Content?.Headers.ContentType?.CharSet, Is.EqualTo("utf-8"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeWithJina_WithBearerPrefix_StripsPrefix()
     {
         // Arrange
@@ -140,10 +141,10 @@ public class JinaHandlerTests : IDisposable
         await _jinaHandler.ScrapeWithJina(url, authHeader, 30);
 
         // Assert
-        Assert.Equal("test-token", _httpClient.DefaultRequestHeaders.Authorization?.Parameter);
+        Assert.That(_httpClient.DefaultRequestHeaders.Authorization?.Parameter, Is.EqualTo("test-token"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeWithJina_WithoutBearerPrefix_UsesTokenAsIs()
     {
         // Arrange
@@ -166,10 +167,10 @@ public class JinaHandlerTests : IDisposable
         await _jinaHandler.ScrapeWithJina(url, authHeader, 30);
 
         // Assert
-        Assert.Equal("test-token", _httpClient.DefaultRequestHeaders.Authorization?.Parameter);
+        Assert.That(_httpClient.DefaultRequestHeaders.Authorization?.Parameter, Is.EqualTo("test-token"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeWithJina_WithHttpError_ThrowsHttpRequestException()
     {
         // Arrange
@@ -186,21 +187,13 @@ public class JinaHandlerTests : IDisposable
             .ReturnsAsync(httpResponse);
 
         // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(() => 
-            _jinaHandler.ScrapeWithJina(url, authHeader, 30));
+        Assert.ThrowsAsync<HttpRequestException>(async () => 
+            await _jinaHandler.ScrapeWithJina(url, authHeader, 30));
     }
 
-    protected virtual void Dispose(bool disposing)
+    [TearDown]
+    public void TearDown()
     {
-        if (disposing)
-        {
-            _httpClient?.Dispose();
-        }
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
+        _httpClient?.Dispose();
     }
 }

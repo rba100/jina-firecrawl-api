@@ -1,11 +1,10 @@
-using Xunit;
 using JinaFirecrawlApi.Models;
 
 namespace JinaFirecrawlApi.Tests.Models;
 
 public class ModelsTests
 {
-    [Fact]
+    [Test]
     public void ScrapeRequest_CanSetUrl()
     {
         // Arrange
@@ -16,20 +15,20 @@ public class ModelsTests
         request.Url = url;
 
         // Assert
-        Assert.Equal(url, request.Url);
+        Assert.That(request.Url, Is.EqualTo(url));
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlResponse_DefaultsSuccessToTrue()
     {
         // Arrange & Act
         var response = new FirecrawlResponse();
 
         // Assert
-        Assert.True(response.Success);
+        Assert.That(response.Success, Is.True);
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlResponse_CanSetProperties()
     {
         // Arrange
@@ -43,12 +42,12 @@ public class ModelsTests
         response.Metadata = metadata;
 
         // Assert
-        Assert.False(response.Success);
-        Assert.Equal(data, response.Data);
-        Assert.Equal(metadata, response.Metadata);
+        Assert.That(response.Success, Is.False);
+        Assert.That(response.Data, Is.EqualTo(data));
+        Assert.That(response.Metadata, Is.EqualTo(metadata));
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlErrorResponse_CanSetError()
     {
         // Arrange
@@ -59,20 +58,20 @@ public class ModelsTests
         errorResponse.Error = errorMessage;
 
         // Assert
-        Assert.Equal(errorMessage, errorResponse.Error);
+        Assert.That(errorResponse.Error, Is.EqualTo(errorMessage));
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlData_DefaultsHtmlToEmpty()
     {
         // Arrange & Act
         var data = new FirecrawlData();
 
         // Assert
-        Assert.Equal(string.Empty, data.Html);
+        Assert.That(data.Html, Is.EqualTo(string.Empty));
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlData_CanSetProperties()
     {
         // Arrange
@@ -85,24 +84,24 @@ public class ModelsTests
         data.Html = html;
 
         // Assert
-        Assert.Equal(markdown, data.Markdown);
-        Assert.Equal(html, data.Html);
+        Assert.That(data.Markdown, Is.EqualTo(markdown));
+        Assert.That(data.Html, Is.EqualTo(html));
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlMetadata_DefaultsToCorrectValues()
     {
         // Arrange & Act
         var metadata = new FirecrawlMetadata();
 
         // Assert
-        Assert.Equal(string.Empty, metadata.Title);
-        Assert.Equal(string.Empty, metadata.Description);
-        Assert.Equal(string.Empty, metadata.Language);
-        Assert.Equal(200, metadata.StatusCode);
+        Assert.That(metadata.Title, Is.EqualTo(string.Empty));
+        Assert.That(metadata.Description, Is.EqualTo(string.Empty));
+        Assert.That(metadata.Language, Is.EqualTo(string.Empty));
+        Assert.That(metadata.StatusCode, Is.EqualTo(200));
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlMetadata_CanSetAllProperties()
     {
         // Arrange
@@ -121,30 +120,30 @@ public class ModelsTests
         metadata.StatusCode = statusCode;
 
         // Assert
-        Assert.Equal(sourceUrl, metadata.SourceURL);
-        Assert.Equal(title, metadata.Title);
-        Assert.Equal(description, metadata.Description);
-        Assert.Equal(language, metadata.Language);
-        Assert.Equal(statusCode, metadata.StatusCode);
+        Assert.That(metadata.SourceURL, Is.EqualTo(sourceUrl));
+        Assert.That(metadata.Title, Is.EqualTo(title));
+        Assert.That(metadata.Description, Is.EqualTo(description));
+        Assert.That(metadata.Language, Is.EqualTo(language));
+        Assert.That(metadata.StatusCode, Is.EqualTo(statusCode));
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlResponse_ImplementsIFirecrawlResponseTypes()
     {
         // Arrange & Act
         var response = new FirecrawlResponse();
 
         // Assert
-        Assert.IsAssignableFrom<IFirecrawlResponseTypes>(response);
+        Assert.That(response, Is.InstanceOf<IFirecrawlResponseTypes>());
     }
 
-    [Fact]
+    [Test]
     public void FirecrawlErrorResponse_ImplementsIFirecrawlResponseTypes()
     {
         // Arrange & Act
         var errorResponse = new FirecrawlErrorResponse();
 
         // Assert
-        Assert.IsAssignableFrom<IFirecrawlResponseTypes>(errorResponse);
+        Assert.That(errorResponse, Is.InstanceOf<IFirecrawlResponseTypes>());
     }
 }

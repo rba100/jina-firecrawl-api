@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
+
 using JinaFirecrawlApi.Models;
 using JinaFirecrawlApi.Services;
 
@@ -11,12 +11,13 @@ namespace JinaFirecrawlApi.Tests.Services;
 
 public class ScrapeServiceTests
 {
-    private readonly Mock<IPdfHandler> _mockPdfHandler;
-    private readonly Mock<IJinaHandler> _mockJinaHandler;
-    private readonly Mock<ILogger<ScrapeService>> _mockLogger;
-    private readonly ScrapeService _scrapeService;
+    private Mock<IPdfHandler> _mockPdfHandler = null!;
+    private Mock<IJinaHandler> _mockJinaHandler = null!;
+    private Mock<ILogger<ScrapeService>> _mockLogger = null!;
+    private ScrapeService _scrapeService = null!;
 
-    public ScrapeServiceTests()
+    [SetUp]
+    public void SetUp()
     {
         _mockPdfHandler = new Mock<IPdfHandler>();
         _mockJinaHandler = new Mock<IJinaHandler>();
@@ -24,49 +25,49 @@ public class ScrapeServiceTests
         _scrapeService = new ScrapeService(_mockPdfHandler.Object, _mockJinaHandler.Object, _mockLogger.Object);
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() => 
             new ScrapeService(_mockPdfHandler.Object, _mockJinaHandler.Object, null!));
-        Assert.Equal("logger", exception.ParamName);
-        Assert.Contains("Logger cannot be null", exception.Message);
+        Assert.That(exception.ParamName, Is.EqualTo("logger"));
+        Assert.That(exception.Message, Does.Contain("Logger cannot be null"));
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithNullPdfHandler_ThrowsArgumentNullException()
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() => 
             new ScrapeService(null!, _mockJinaHandler.Object, _mockLogger.Object));
-        Assert.Equal("pdfHandler", exception.ParamName);
-        Assert.Contains("PDF handler cannot be null", exception.Message);
+        Assert.That(exception.ParamName, Is.EqualTo("pdfHandler"));
+        Assert.That(exception.Message, Does.Contain("PDF handler cannot be null"));
     }
 
-    [Fact]
+    [Test]
     public void Constructor_WithNullJinaHandler_ThrowsArgumentNullException()
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() => 
             new ScrapeService(_mockPdfHandler.Object, null!, _mockLogger.Object));
-        Assert.Equal("jinaHandler", exception.ParamName);
-        Assert.Contains("Jina handler cannot be null", exception.Message);
+        Assert.That(exception.ParamName, Is.EqualTo("jinaHandler"));
+        Assert.That(exception.Message, Does.Contain("Jina handler cannot be null"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithNullUrl_ThrowsArgumentNullException()
     {
         // Arrange
         var request = new ScrapeRequest { Url = null };
 
         // Act & Assert
-        var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => 
-            _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None));
-        Assert.Contains("URL cannot be null or empty", exception.Message);
+        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () => 
+            await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None));
+        Assert.That(exception.Message, Does.Contain("URL cannot be null or empty"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithPdfUrlAndInvalidScheme_ReturnsErrorResponse()
     {
         // Arrange
@@ -76,12 +77,12 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlErrorResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlErrorResponse>());
         var errorResponse = (FirecrawlErrorResponse)result;
-        Assert.Equal("Invalid URL scheme for PDF. Must be http or https.", errorResponse.Error);
+        Assert.That(errorResponse.Error, Is.EqualTo("Invalid URL scheme for PDF. Must be http or https."));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithValidPdfUrl_ReturnSuccessResponse()
     {
         // Arrange
@@ -95,16 +96,16 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlResponse>());
         var response = (FirecrawlResponse)result;
-        Assert.True(response.Success);
-        Assert.Equal(expectedMarkdown, response.Data?.Markdown);
-        Assert.Equal(string.Empty, response.Data?.Html);
-        Assert.Equal("https://example.com/test.pdf", response.Metadata?.SourceURL);
-        Assert.Equal(200, response.Metadata?.StatusCode);
+        Assert.That(response.Success, Is.True);
+        Assert.That(response.Data?.Markdown, Is.EqualTo(expectedMarkdown));
+        Assert.That(response.Data?.Html, Is.EqualTo(string.Empty));
+        Assert.That(response.Metadata?.SourceURL, Is.EqualTo("https://example.com/test.pdf"));
+        Assert.That(response.Metadata?.StatusCode, Is.EqualTo(200));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithPdfUrlAndEmptyContent_ReturnsErrorResponse()
     {
         // Arrange
@@ -117,13 +118,13 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlErrorResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlErrorResponse>());
         var errorResponse = (FirecrawlErrorResponse)result;
-        Assert.Contains("An unexpected server error occurred", errorResponse.Error);
-        Assert.Contains("Failed to extract content from PDF", errorResponse.Error);
+        Assert.That(errorResponse.Error, Does.Contain("An unexpected server error occurred"));
+        Assert.That(errorResponse.Error, Does.Contain("Failed to extract content from PDF"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithRegularUrl_ReturnSuccessResponse()
     {
         // Arrange
@@ -137,16 +138,16 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlResponse>());
         var response = (FirecrawlResponse)result;
-        Assert.True(response.Success);
-        Assert.Equal(expectedMarkdown, response.Data?.Markdown);
-        Assert.Equal(string.Empty, response.Data?.Html);
-        Assert.Equal("https://example.com", response.Metadata?.SourceURL);
-        Assert.Equal(200, response.Metadata?.StatusCode);
+        Assert.That(response.Success, Is.True);
+        Assert.That(response.Data?.Markdown, Is.EqualTo(expectedMarkdown));
+        Assert.That(response.Data?.Html, Is.EqualTo(string.Empty));
+        Assert.That(response.Metadata?.SourceURL, Is.EqualTo("https://example.com"));
+        Assert.That(response.Metadata?.StatusCode, Is.EqualTo(200));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithRegularUrlAndEmptyContent_ReturnsErrorResponse()
     {
         // Arrange
@@ -159,13 +160,13 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlErrorResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlErrorResponse>());
         var errorResponse = (FirecrawlErrorResponse)result;
-        Assert.Contains("An unexpected server error occurred", errorResponse.Error);
-        Assert.Contains("Failed to extract content using Jina", errorResponse.Error);
+        Assert.That(errorResponse.Error, Does.Contain("An unexpected server error occurred"));
+        Assert.That(errorResponse.Error, Does.Contain("Failed to extract content using Jina"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithTaskCanceledException_ReturnsTimeoutErrorResponse()
     {
         // Arrange
@@ -178,13 +179,13 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlErrorResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlErrorResponse>());
         var errorResponse = (FirecrawlErrorResponse)result;
-        Assert.Contains("The request timed out after 15 seconds", errorResponse.Error);
-        Assert.Contains("https://example.com", errorResponse.Error);
+        Assert.That(errorResponse.Error, Does.Contain("The request timed out after 15 seconds"));
+        Assert.That(errorResponse.Error, Does.Contain("https://example.com"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithHttpRequestException_ReturnsNetworkErrorResponse()
     {
         // Arrange
@@ -198,13 +199,13 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlErrorResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlErrorResponse>());
         var errorResponse = (FirecrawlErrorResponse)result;
-        Assert.Contains("Request failed for URL: https://example.com", errorResponse.Error);
-        Assert.Contains("Network error", errorResponse.Error);
+        Assert.That(errorResponse.Error, Does.Contain("Request failed for URL: https://example.com"));
+        Assert.That(errorResponse.Error, Does.Contain("Network error"));
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_WithUnexpectedException_ReturnsServerErrorResponse()
     {
         // Arrange
@@ -218,16 +219,16 @@ public class ScrapeServiceTests
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
         // Assert
-        Assert.IsType<FirecrawlErrorResponse>(result);
+        Assert.That(result, Is.TypeOf<FirecrawlErrorResponse>());
         var errorResponse = (FirecrawlErrorResponse)result;
-        Assert.Contains("An unexpected server error occurred", errorResponse.Error);
-        Assert.Contains("Unexpected error", errorResponse.Error);
+        Assert.That(errorResponse.Error, Does.Contain("An unexpected server error occurred"));
+        Assert.That(errorResponse.Error, Does.Contain("Unexpected error"));
     }
 
-    [Theory]
-    [InlineData("https://example.com/test.PDF")]
-    [InlineData("https://example.com/test.Pdf")]
-    [InlineData("https://example.com/test.pDf")]
+    [Test]
+    [TestCase("https://example.com/test.PDF")]
+    [TestCase("https://example.com/test.Pdf")]
+    [TestCase("https://example.com/test.pDf")]
     public async Task ScrapeAsync_WithPdfUrlCaseInsensitive_UsesPdfHandler(string url)
     {
         // Arrange
@@ -243,7 +244,7 @@ public class ScrapeServiceTests
         _mockJinaHandler.Verify(x => x.ScrapeWithJina(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()), Times.Never);
     }
 
-    [Fact]
+    [Test]
     public async Task ScrapeAsync_VerifyJinaHandlerCalledWithCorrectParameters()
     {
         // Arrange
