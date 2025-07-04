@@ -1,5 +1,6 @@
 using JinaFirecrawlApi.Services;
 using JinaFirecrawlApi.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
 
 namespace JinaFirecrawlApi;
 
@@ -9,7 +10,14 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // Add services to the container.
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        });
+
+        builder.Services.AddHttpContextAccessor();
+
         builder.Services.AddHttpClient();
         builder.Services.AddControllers();
         builder.Services.AddAuthorization();
@@ -20,6 +28,8 @@ public class Program
         builder.Services.AddScoped<IPdfConverter, PdfToTxtFileConverter>();
 
         var app = builder.Build();
+
+        app.UseForwardedHeaders();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())

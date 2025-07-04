@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using JinaFirecrawlApi.Models;
+using System.Diagnostics;
 
 namespace JinaFirecrawlApi.Services;
 
@@ -20,12 +21,14 @@ public class ScrapeService : IScrapeService
     public async Task<IFirecrawlResponseTypes> ScrapeAsync(ScrapeRequest request, string authHeader, CancellationToken cancellationToken)
     {
         var sourceUrl = request.Url ?? throw new ArgumentNullException(nameof(request.Url), "URL cannot be null or empty.");
-        string? markdownContent = null;
         int statusCode = 200;
         string title = sourceUrl;
         string description = "Scraped content";
         string language = "en";
+        var sw = new Stopwatch();
+        sw.Start();
 
+        string? markdownContent;
         try
         {
             if (sourceUrl.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
@@ -71,6 +74,9 @@ public class ScrapeService : IScrapeService
             _logger.LogError(ex, "An unexpected error occurred while scraping URL: {Url}", sourceUrl);
             return CreateErrorResponse($"An unexpected server error occurred: {ex.Message}");
         }
+
+        sw.Stop();
+        _logger.LogInformation("Successfully scraped URL: {Url} in {ElapsedMilliseconds} ms", sourceUrl, sw.ElapsedMilliseconds);
 
         return new FirecrawlResponse
         {

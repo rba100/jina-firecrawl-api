@@ -12,6 +12,13 @@ public class ApiKeyMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // root path is health check, no API key required
+        if (context.Request.Path == "/")
+        {
+            await _next(context);
+            return;
+        }
+
         if (!context.Request.Headers.ContainsKey(API_KEY_HEADER))
         {
             context.Response.StatusCode = 401;
