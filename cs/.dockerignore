@@ -1,0 +1,16 @@
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.git/
+.gitignore
+Dockerfile
+README.md
+*.md
+*.log
+markitdown/
+markitdown-venv/
+*.pdf
