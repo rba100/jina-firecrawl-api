@@ -2,10 +2,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-COPY *.csproj ./
+COPY ./Api/JinaFirecrawlApi.csproj ./
 RUN dotnet restore
 
-COPY . ./
+COPY ./Api ./
 RUN dotnet publish -c Release -o /app --no-restore
 
 # ---- Runtime Stage ----
