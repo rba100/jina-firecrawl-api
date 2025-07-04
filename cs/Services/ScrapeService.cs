@@ -5,6 +5,7 @@ namespace JinaFirecrawlApi.Services;
 
 public class ScrapeService : IScrapeService
 {
+    private const int DefaultTimeoutSeconds = 15;
     private readonly IPdfHandler _pdfHandler;
     private readonly IJinaHandler _jinaHandler;
     private readonly ILogger<ScrapeService> _logger;
@@ -41,12 +42,18 @@ public class ScrapeService : IScrapeService
             }
             else
             {
-                markdownContent = await _jinaHandler.ScrapeWithJina(sourceUrl, authHeader, 10);
+                markdownContent = await _jinaHandler.ScrapeWithJina(sourceUrl, authHeader, DefaultTimeoutSeconds);
                 if (string.IsNullOrWhiteSpace(markdownContent))
                 {
                     throw new Exception("Failed to extract content using Jina.");
                 }
             }
+        }
+        catch (TaskCanceledException)
+        {
+            statusCode = 504;
+            _logger.LogWarning("Request timed out while scraping URL: {Url}", sourceUrl);
+            return CreateErrorResponse($"The request timed out after {DefaultTimeoutSeconds} seconds while scraping URL: {sourceUrl}");
         }
         catch (HttpRequestException ex)
         {
