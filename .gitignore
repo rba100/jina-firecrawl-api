@@ -1,7 +1,0 @@
-.env
-example.response.json
-
-# C#
-*.csproj.user
-bin/
-obj/

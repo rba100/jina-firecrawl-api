@@ -1,28 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3-slim
+# ---- Build Stage ----
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
 
-# Set the working directory in the container
+COPY *.csproj ./
+RUN dotnet restore
+
+COPY . ./
+RUN dotnet publish -c Release -o /app --no-restore
+
+# ---- Runtime Stage ----
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
-# Copy the dependencies file to the working directory
-COPY requirements.txt .
+COPY --from=build /app ./
 
-# Install any needed dependencies
-# Ensure build essentials are available for markitdown's dependencies if any
-RUN apt-get update && apt-get install -y build-essential && \
-    pip install --no-cache-dir -r requirements.txt && \
-    apt-get purge -y --auto-remove build-essential && \
-    rm -rf /var/lib/apt/lists/*
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
 
-# Copy the content of the local src directory to the working directory
-
-COPY logging.conf .
-COPY app.py . 
-COPY jina_handler.py . 
-COPY pdf_handler.py . 
-
-# Make port 3002 available to the world outside this container
-EXPOSE 3002
-
-# Run app.py
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3002", "--workers", "2"]
+ENTRYPOINT ["dotnet", "JinaFirecrawlApi.dll"]
