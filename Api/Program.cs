@@ -21,8 +21,7 @@ public class Program
         builder.Services.AddHttpClient();
         builder.Services.AddControllers();
         builder.Services.AddAuthorization();
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddOpenApi();
         builder.Services.AddScoped<IScrapeService, ScrapeService>();
         builder.Services.AddScoped<IPdfHandler, PdfHandler>();
         builder.Services.AddScoped<IJinaHandler, JinaHandler>();
@@ -35,8 +34,7 @@ public class Program
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            app.MapOpenApi();
         }
         else
         {

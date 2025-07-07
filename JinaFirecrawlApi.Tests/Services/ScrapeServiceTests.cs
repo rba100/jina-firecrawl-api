@@ -9,6 +9,8 @@ using JinaFirecrawlApi.Services;
 
 namespace JinaFirecrawlApi.Tests.Services;
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+
 public class ScrapeServiceTests
 {
     private Mock<IPdfHandler> _mockPdfHandler = null!;
@@ -29,7 +31,7 @@ public class ScrapeServiceTests
     public void Constructor_WithNullLogger_ThrowsArgumentNullException()
     {
         // Act & Assert
-        var exception = Assert.Throws<ArgumentNullException>(() => 
+        var exception = Assert.Throws<ArgumentNullException>(() =>
             new ScrapeService(_mockPdfHandler.Object, _mockJinaHandler.Object, null!));
         Assert.That(exception.ParamName, Is.EqualTo("logger"));
         Assert.That(exception.Message, Does.Contain("Logger cannot be null"));
@@ -39,7 +41,7 @@ public class ScrapeServiceTests
     public void Constructor_WithNullPdfHandler_ThrowsArgumentNullException()
     {
         // Act & Assert
-        var exception = Assert.Throws<ArgumentNullException>(() => 
+        var exception = Assert.Throws<ArgumentNullException>(() =>
             new ScrapeService(null!, _mockJinaHandler.Object, _mockLogger.Object));
         Assert.That(exception.ParamName, Is.EqualTo("pdfHandler"));
         Assert.That(exception.Message, Does.Contain("PDF handler cannot be null"));
@@ -49,7 +51,7 @@ public class ScrapeServiceTests
     public void Constructor_WithNullJinaHandler_ThrowsArgumentNullException()
     {
         // Act & Assert
-        var exception = Assert.Throws<ArgumentNullException>(() => 
+        var exception = Assert.Throws<ArgumentNullException>(() =>
             new ScrapeService(_mockPdfHandler.Object, null!, _mockLogger.Object));
         Assert.That(exception.ParamName, Is.EqualTo("jinaHandler"));
         Assert.That(exception.Message, Does.Contain("Jina handler cannot be null"));
@@ -62,7 +64,7 @@ public class ScrapeServiceTests
         var request = new ScrapeRequest { Url = null };
 
         // Act & Assert
-        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () => 
+        var exception = Assert.ThrowsAsync<ArgumentNullException>(async () =>
             await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None));
         Assert.That(exception.Message, Does.Contain("URL cannot be null or empty"));
     }
@@ -88,7 +90,7 @@ public class ScrapeServiceTests
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com/test.pdf" };
         var expectedMarkdown = "PDF content as markdown";
-        
+
         _mockPdfHandler.Setup(x => x.Scrape(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                       .ReturnsAsync(expectedMarkdown);
 
@@ -110,9 +112,9 @@ public class ScrapeServiceTests
     {
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com/test.pdf" };
-        
+
         _mockPdfHandler.Setup(x => x.Scrape(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                      .ReturnsAsync(default(string));
+                      .ReturnsAsync(string.Empty);
 
         // Act
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
@@ -130,7 +132,7 @@ public class ScrapeServiceTests
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com" };
         var expectedMarkdown = "Website content as markdown";
-        
+
         _mockJinaHandler.Setup(x => x.ScrapeWithJina(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                        .ReturnsAsync(expectedMarkdown);
 
@@ -152,10 +154,9 @@ public class ScrapeServiceTests
     {
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com" };
-        
-        _mockJinaHandler.Setup(x => x.ScrapeWithJina(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-                       .ReturnsAsync(default(string));
 
+        _mockJinaHandler.Setup(x => x.ScrapeWithJina(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                       .ReturnsAsync(string.Empty);
         // Act
         var result = await _scrapeService.ScrapeAsync(request, "Bearer token", CancellationToken.None);
 
@@ -171,7 +172,7 @@ public class ScrapeServiceTests
     {
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com" };
-        
+
         _mockJinaHandler.Setup(x => x.ScrapeWithJina(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                        .ThrowsAsync(new TaskCanceledException());
 
@@ -191,7 +192,7 @@ public class ScrapeServiceTests
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com" };
         var httpException = new HttpRequestException("Network error");
-        
+
         _mockJinaHandler.Setup(x => x.ScrapeWithJina(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                        .ThrowsAsync(httpException);
 
@@ -211,7 +212,7 @@ public class ScrapeServiceTests
         // Arrange
         var request = new ScrapeRequest { Url = "https://example.com" };
         var exception = new InvalidOperationException("Unexpected error");
-        
+
         _mockJinaHandler.Setup(x => x.ScrapeWithJina(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                        .ThrowsAsync(exception);
 
