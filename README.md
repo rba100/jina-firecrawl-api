@@ -37,7 +37,7 @@ The API will be available at `http://localhost:3002` by default.
 
 **Headers:**
 
-- `Authorization: Bearer <your-jina-api-key>` (required for non-PDF URLs)
+- `Authorization: Bearer <your-jina-api-key>`
 
 **Response:**
 
