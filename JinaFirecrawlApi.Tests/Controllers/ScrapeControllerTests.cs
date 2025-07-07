@@ -1,12 +1,11 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+
 using JinaFirecrawlApi.Controllers;
 using JinaFirecrawlApi.Models;
 using JinaFirecrawlApi.Services;
+
+using Moq;
 
 namespace JinaFirecrawlApi.Tests.Controllers;
 
@@ -20,7 +19,7 @@ public class ScrapeControllerTests
     {
         _mockScrapeService = new Mock<IScrapeService>();
         _controller = new ScrapeController(_mockScrapeService.Object);
-        
+
         // Setup HTTP context for headers
         var httpContext = new DefaultHttpContext();
         _controller.ControllerContext = new ControllerContext
