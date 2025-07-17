@@ -9,6 +9,8 @@ This project is a drop-in replacement for Firecrawl, designed for LibreChat, but
 
 ### Usage
 
+In Librechat, set `FIRECRAWL_API_URL` to `http://localhost:3002/` or wherever you will host this, and `FIRECRAWL_API_KEY` to your Jina.AI key.
+
 **Run with Docker Compose:**
 
 ```sh
