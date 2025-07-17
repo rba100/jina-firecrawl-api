@@ -16,6 +16,7 @@ public class ScrapeServiceTests
     private Mock<IPdfHandler> _mockPdfHandler = null!;
     private Mock<IJinaHandler> _mockJinaHandler = null!;
     private Mock<ILogger<ScrapeService>> _mockLogger = null!;
+    private Mock<Microsoft.Extensions.Options.IOptions<ScrapeOptions>> _mockOptions = null!;
     private ScrapeService _scrapeService = null!;
 
     [SetUp]
@@ -24,7 +25,9 @@ public class ScrapeServiceTests
         _mockPdfHandler = new Mock<IPdfHandler>();
         _mockJinaHandler = new Mock<IJinaHandler>();
         _mockLogger = new Mock<ILogger<ScrapeService>>();
-        _scrapeService = new ScrapeService(_mockPdfHandler.Object, _mockJinaHandler.Object, _mockLogger.Object);
+        _mockOptions = new Mock<Microsoft.Extensions.Options.IOptions<ScrapeOptions>>();
+        _mockOptions.Setup(o => o.Value).Returns(new ScrapeOptions { TimeoutSeconds = 15 });
+        _scrapeService = new ScrapeService(_mockPdfHandler.Object, _mockJinaHandler.Object, _mockLogger.Object, _mockOptions.Object);
     }
 
     [Test]
@@ -32,7 +35,7 @@ public class ScrapeServiceTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new ScrapeService(_mockPdfHandler.Object, _mockJinaHandler.Object, null!));
+            new ScrapeService(_mockPdfHandler.Object, _mockJinaHandler.Object, null!, _mockOptions.Object));
         Assert.That(exception.ParamName, Is.EqualTo("logger"));
         Assert.That(exception.Message, Does.Contain("Logger cannot be null"));
     }
@@ -42,7 +45,7 @@ public class ScrapeServiceTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new ScrapeService(null!, _mockJinaHandler.Object, _mockLogger.Object));
+            new ScrapeService(null!, _mockJinaHandler.Object, _mockLogger.Object, _mockOptions.Object));
         Assert.That(exception.ParamName, Is.EqualTo("pdfHandler"));
         Assert.That(exception.Message, Does.Contain("PDF handler cannot be null"));
     }
@@ -52,7 +55,7 @@ public class ScrapeServiceTests
     {
         // Act & Assert
         var exception = Assert.Throws<ArgumentNullException>(() =>
-            new ScrapeService(_mockPdfHandler.Object, null!, _mockLogger.Object));
+            new ScrapeService(_mockPdfHandler.Object, null!, _mockLogger.Object, _mockOptions.Object));
         Assert.That(exception.ParamName, Is.EqualTo("jinaHandler"));
         Assert.That(exception.Message, Does.Contain("Jina handler cannot be null"));
     }

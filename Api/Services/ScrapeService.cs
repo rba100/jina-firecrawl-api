@@ -1,21 +1,26 @@
 using System.Runtime.CompilerServices;
 using JinaFirecrawlApi.Models;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
 namespace JinaFirecrawlApi.Services;
 
 public class ScrapeService : IScrapeService
 {
-    private const int DefaultTimeoutSeconds = 15;
+    private readonly int _timeoutSeconds;
     private readonly IPdfHandler _pdfHandler;
     private readonly IJinaHandler _jinaHandler;
     private readonly ILogger<ScrapeService> _logger;
 
-    public ScrapeService(IPdfHandler pdfHandler, IJinaHandler jinaHandler, ILogger<ScrapeService> logger)
+    public ScrapeService(IPdfHandler pdfHandler, IJinaHandler jinaHandler, ILogger<ScrapeService> logger, IOptions<ScrapeOptions> options)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger), "Logger cannot be null.");
         _pdfHandler = pdfHandler ?? throw new ArgumentNullException(nameof(pdfHandler), "PDF handler cannot be null.");
         _jinaHandler = jinaHandler ?? throw new ArgumentNullException(nameof(jinaHandler), "Jina handler cannot be null.");
+        if (options?.Value?.TimeoutSeconds is int t && t > 0)
+            _timeoutSeconds = t;
+        else
+            _timeoutSeconds = 15;
     }
 
     public async Task<IFirecrawlResponseTypes> ScrapeAsync(ScrapeRequest request, string authHeader, CancellationToken cancellationToken)
@@ -45,7 +50,7 @@ public class ScrapeService : IScrapeService
             }
             else
             {
-                markdownContent = await _jinaHandler.ScrapeWithJina(sourceUrl, authHeader, DefaultTimeoutSeconds);
+                markdownContent = await _jinaHandler.ScrapeWithJina(sourceUrl, authHeader, _timeoutSeconds);
                 if (string.IsNullOrWhiteSpace(markdownContent))
                 {
                     throw new Exception("Failed to extract content using Jina.");
@@ -56,7 +61,7 @@ public class ScrapeService : IScrapeService
         {
             statusCode = 504;
             _logger.LogWarning("Request timed out while scraping URL: {Url}", sourceUrl);
-            return CreateErrorResponse($"The request timed out after {DefaultTimeoutSeconds} seconds while scraping URL: {sourceUrl}");
+            return CreateErrorResponse($"The request timed out after {_timeoutSeconds} seconds while scraping URL: {sourceUrl}");
         }
         catch (HttpRequestException ex)
         {

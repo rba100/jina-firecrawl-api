@@ -23,6 +23,29 @@ dotnet run
 
 The API will be available at `http://localhost:3002` by default.
 
+### Configuration
+
+#### Timeout
+
+You can configure the timeout for scraping operations (in seconds) via either `appsettings.json` or the `SCRAPE__TIMEOUTSECONDS` environment variable. The default is 15 seconds.
+
+- **Environment variable:**  
+  Set `SCRAPE__TIMEOUTSECONDS` (note the double underscore) to your desired timeout value.  
+  This is the .NET convention for mapping environment variables to configuration sections and properties (e.g., `Scrape:TimeoutSeconds` in appsettings.json maps to `SCRAPE__TIMEOUTSECONDS` as an environment variable).
+
+- **appsettings.json:**  
+  Add or edit the following section:
+  ```json
+  "Scrape": {
+    "TimeoutSeconds": 20
+  }
+  ```
+
+This timeout also controls the "fallback" timeout passed to Jina. If a page takes too long to load with JavaScript execution, Jina will abort the browser-based scrape and fall back to scraping the raw HTML (without JS execution). This fallback is much faster, but may compromise accuracy for pages that are slow to load or require JavaScript for rendering.
+
+**Tradeoff:**  
+The fallback feature improves speed for slow or problematic pages, but may result in incomplete or less accurate content for sites that require JavaScript to render important information.
+
 ### Endpoint
 
 `POST /v1/scrape`

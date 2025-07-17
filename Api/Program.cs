@@ -1,5 +1,6 @@
 using JinaFirecrawlApi.Services;
 using JinaFirecrawlApi.Middleware;
+using JinaFirecrawlApi.Models;
 using Microsoft.AspNetCore.HttpOverrides;
 
 namespace JinaFirecrawlApi;
@@ -18,6 +19,7 @@ public class Program
 
         builder.Services.AddHttpContextAccessor();
 
+        builder.Services.Configure<ScrapeOptions>(builder.Configuration.GetSection("Scrape"));
         builder.Services.AddHttpClient();
         builder.Services.AddControllers();
         builder.Services.AddAuthorization();
@@ -28,6 +30,11 @@ public class Program
         builder.Services.AddScoped<IPdfConverter, PdfToTxtFileConverter>();
 
         var app = builder.Build();
+
+        // Log configured settings at startup
+        var scrapeOptions = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<JinaFirecrawlApi.Models.ScrapeOptions>>().Value;
+        var logger = app.Services.GetRequiredService<Microsoft.Extensions.Logging.ILoggerFactory>().CreateLogger("Startup");
+        logger.LogInformation("Configured Scrape TimeoutSeconds: {TimeoutSeconds}", scrapeOptions.TimeoutSeconds);
 
         app.UseForwardedHeaders();
 
