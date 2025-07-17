@@ -6,7 +6,7 @@ namespace JinaFirecrawlApi.Services;
 
 public class ScrapeService : IScrapeService
 {
-    private const int DefaultTimeoutSeconds = 20;
+    private const int DefaultTimeoutSeconds = 15;
     private readonly IPdfHandler _pdfHandler;
     private readonly IJinaHandler _jinaHandler;
     private readonly ILogger<ScrapeService> _logger;

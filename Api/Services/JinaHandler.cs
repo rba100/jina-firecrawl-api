@@ -1,8 +1,5 @@
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using System.Threading.Tasks;
-using System;
 
 namespace JinaFirecrawlApi.Services;
 
@@ -20,6 +17,8 @@ public class JinaHandler : IJinaHandler
         var httpClient = _httpClientFactory.CreateClient(nameof(JinaHandler));
         httpClient.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authHeader.Replace("Bearer ", ""));
+        var fallbackTimeout = timeoutSeconds - 4;
+        if (fallbackTimeout > 0) httpClient.DefaultRequestHeaders.Add("X-Timeout", fallbackTimeout.ToString());
 
         var payload = new { url = url };
         var content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
