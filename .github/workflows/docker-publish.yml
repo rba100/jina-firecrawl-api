@@ -36,6 +36,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=ref,event=branch
 
       - name: Build and push Docker image (multi-arch)
         uses: docker/build-push-action@v5

@@ -2,11 +2,6 @@
 
 This project is a drop-in replacement for Firecrawl, designed for LibreChat, but powered by Jina.AI. It exposes a `/v1/scrape` endpoint compatible with Firecrawl's API.
 
-### How it works
-
-- For most URLs, requests are proxied to Jina.AI's [r.jina.ai](https://r.jina.ai) service. You must provide your Jina API key as the Bearer token in the `Authorization` header; this key is forwarded to Jina for those requests.
-- For PDF URLs, the service downloads and parses the PDF directly. Any API key is accepted for PDF requests.
-
 ### Usage
 
 In Librechat, set `FIRECRAWL_API_URL` to `http://localhost:3002/` or wherever you will host this, and `FIRECRAWL_API_KEY` to your Jina.AI key.
@@ -14,7 +9,7 @@ In Librechat, set `FIRECRAWL_API_URL` to `http://localhost:3002/` or wherever yo
 **Run directly from GitHub Container Registry (recommended):**
 
 ```sh
-docker run -d -p 3002:8080 ghcr.io/rba100/jina-firecrawl-api:master
+docker run -d -p 3002:8080 ghcr.io/rba100/jina-firecrawl-api:latest
 ```
 
 This will pull and run the latest published image from [ghcr.io](https://ghcr.io/). It needs no configuration - just use your jina api key with it.
@@ -32,6 +27,11 @@ dotnet run
 ```
 
 The API will be available at `http://localhost:3002` by default.
+
+### How it works
+
+- For most URLs, requests are proxied to Jina.AI's [r.jina.ai](https://r.jina.ai) service. You must provide your Jina API key as the Bearer token in the `Authorization` header; this key is forwarded to Jina for those requests.
+- For PDF URLs, the service downloads and parses the PDF directly. Any API key is accepted for PDF requests.
 
 ### Configuration
 
