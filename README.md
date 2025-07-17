@@ -11,7 +11,15 @@ This project is a drop-in replacement for Firecrawl, designed for LibreChat, but
 
 In Librechat, set `FIRECRAWL_API_URL` to `http://localhost:3002/` or wherever you will host this, and `FIRECRAWL_API_KEY` to your Jina.AI key.
 
-**Run with Docker Compose:**
+**Run directly from GitHub Container Registry (recommended):**
+
+```sh
+docker run -d -p 3002:8080 ghcr.io/rba100/jina-firecrawl-api:master
+```
+
+This will pull and run the latest published image from [ghcr.io](https://ghcr.io/). It needs no configuration - just use your jina api key with it.
+
+**Or run with Docker Compose (builds locally):**
 
 ```sh
 docker compose up -d
